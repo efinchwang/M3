@@ -16,11 +16,18 @@ generation, and multi-resolution attribution.
 ### Python
 
 ```bash
-pip install torch      # install first, matched to your CUDA / CPU setup
-pip install "git+https://github.com/PYangLab/M3.git"   # imported as `import m3`
+pip install m3-sc      # imported as `import m3`
 ```
 
-_A PyPI release (`pip install m3-sc`) is planned._
+PyTorch comes along automatically. If you need a build matched to a specific CUDA
+version, install it first and pip will keep it:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+pip install m3-sc
+```
+
+For the development version: `pip install "git+https://github.com/PYangLab/M3.git"`.
 
 ### R
 

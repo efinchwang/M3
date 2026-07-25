@@ -1,0 +1,85 @@
+# Publish m3-sc to PyPI via Trusted Publishing (OIDC) -- no API tokens anywhere.
+#
+# One-time setup on pypi.org (do this BEFORE pushing the first tag):
+#   pypi.org -> Your projects / Publishing -> "Add a pending publisher"
+#     Owner:            PYangLab
+#     Repository:       M3
+#     Workflow name:    publish.yml
+#     Environment:      pypi
+#   Then: repo Settings -> Environments -> New environment named "pypi".
+#
+# Release flow:
+#   1. bump __version__ in src/m3/__init__.py (pyproject reads it via hatch)
+#   2. git tag v0.3.0 && git push pyanglab v0.3.0
+#
+# The tag is what triggers a release; the tag version and the package version must
+# match, and the job below fails loudly if they drift. A version can never be
+# re-uploaded to PyPI, so the TestPyPI job runs first on every tag.
+name: Publish to PyPI
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install build twine
+
+      - name: Build sdist + wheel
+        run: python -m build
+
+      - name: Check that the tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          pkg=$(python -c "import re,pathlib; \
+            print(re.search(r'__version__ = \"([^\"]+)\"', \
+            pathlib.Path('src/m3/__init__.py').read_text()).group(1))")
+          echo "tag=$tag  package=$pkg"
+          test "$tag" = "$pkg" || { echo "::error::tag v$tag != version $pkg"; exit 1; }
+
+      - name: Validate metadata
+        run: twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  testpypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # TestPyPI often already holds a same-numbered rehearsal upload
+          skip-existing: true
+
+  pypi:
+    needs: testpypi
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

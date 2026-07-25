@@ -4,7 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "m3-sc"
-version = "0.3.0.dev0"
+# Single source of truth: src/m3/__init__.py (see [tool.hatch.version] below)
+dynamic = ["version"]
 description = "Multimodal, multi-batch, condition-aware single-cell model with donor-level disease prediction"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,7 +23,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
-# torch is installed separately (its build is CUDA/CPU-specific); see the README.
+# torch arrives transitively via captum, so `pip install m3-sc` works unaided.
+# Only users who need a specific CUDA build install torch themselves first.
 dependencies = [
     "numpy",
     "scipy",
@@ -42,6 +44,9 @@ dev = ["pytest", "ruff"]
 Homepage = "https://github.com/PYangLab/M3"
 Documentation = "https://pyanglab.github.io/M3/"
 Repository = "https://github.com/PYangLab/M3"
+
+[tool.hatch.version]
+path = "src/m3/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/m3"]
