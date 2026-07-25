@@ -5,14 +5,13 @@ tags:
 
 # Installation
 
-M3 is installed from GitHub (a PyPI release as **`m3-sc`** is planned) and imported as **`import m3`**. It is
+M3 is installed from PyPI as **`m3-sc`** and imported as **`import m3`**. It is
 tested on **Python 3.10 – 3.12** on Linux and macOS.
 
 !!! tip "TL;DR"
     ```bash
     conda create -n m3 python=3.11 -y && conda activate m3
-    pip install torch          # match your CUDA setup first
-    pip install "git+https://github.com/PYangLab/M3.git"   # imported as `import m3`
+    pip install m3-sc          # imported as `import m3`; PyTorch comes along automatically
     ```
 
 ---
@@ -42,30 +41,27 @@ tested on **Python 3.10 – 3.12** on Linux and macOS.
 
 ---
 
-## Step 2 — Install PyTorch
+## Step 2 — PyTorch *(usually nothing to do)*
 
-M3's training engine runs on **PyTorch**, which is not pulled in automatically so
-that you can match it to your CUDA / MPS setup. Install it *first*.
+M3's training engine runs on **PyTorch**, which `pip install m3-sc` pulls in
+automatically as a dependency of `captum`. Most people can skip straight to
+Step 3.
 
-=== "CPU"
+=== "Default (CPU / macOS)"
 
-    ```bash title="terminal"
-    pip install torch
-    ```
+    Nothing to do — Step 3 brings PyTorch with it. On Apple Silicon, M3 runs on
+    the CPU backend.
 
 === "Linux + CUDA 12.x"
+
+    Only if you need a build matched to a specific CUDA version, install it
+    *before* Step 3 — pip will then keep the build you chose:
 
     ```bash title="terminal"
     pip install torch --index-url https://download.pytorch.org/whl/cu121
     ```
 
-=== "macOS (Apple Silicon)"
-
-    ```bash title="terminal"
-    pip install torch    # M3 runs on the CPU backend on Apple Silicon
-    ```
-
-Verify:
+Verify, once Step 3 is done:
 
 ```bash
 python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
@@ -78,10 +74,11 @@ python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 === "pip (recommended)"
 
     ```bash title="terminal"
-    pip install "git+https://github.com/PYangLab/M3.git"
+    pip install m3-sc
     ```
 
-    Imported as `import m3`. A PyPI release as `m3-sc` is planned.
+    Imported as `import m3`. PyTorch comes along automatically. For the
+    development version: `pip install "git+https://github.com/PYangLab/M3.git"`.
 
 === "From source"
 
@@ -101,19 +98,24 @@ Installing `m3-sc` pulls in its runtime dependencies:
 | `anndata` | `.h5ad` reading |
 | `h5py` | paper-format expression matrix I/O |
 | `scikit-learn` | internal PCA / scaling in the engine |
+| `scanpy` | neighbours / UMAP used by the engine |
+| `tqdm` | training progress bars |
+| `captum` | integrated-gradients attribution — **brings `torch` with it** |
 
-PyTorch (Step 2) is required at training time but installed separately.
+PyTorch therefore arrives automatically, so a plain `pip install m3-sc` gives you
+everything the training engine needs. Install `torch` yourself only if you want a
+build matched to a specific CUDA version (Step 2).
 
 ---
 
 ## Step 4 — Tutorial extras *(optional)*
 
 The [tutorial notebooks](notebooks/py_01_representation_learning.ipynb) plot UMAPs
-and ROC curves, which need a few extra libraries that the core package does not
-require:
+and ROC curves. `scanpy` is already a dependency of `m3-sc`, so only the plotting
+libraries are extra:
 
 ```bash title="terminal"
-pip install scanpy umap-learn matplotlib
+pip install umap-learn matplotlib
 ```
 
 ---
@@ -124,7 +126,7 @@ pip install scanpy umap-learn matplotlib
 python -c "import m3; print(m3.__version__)"
 ```
 
-Expected output: the installed version string (e.g. `0.3.0.dev0`). If a version
+Expected output: the installed version string (e.g. `0.3.0`). If a version
 prints, the API is reachable.
 
 The demo dataset used throughout the tutorials is **built into the wheel** — no
@@ -208,8 +210,9 @@ metadata with at least a **donor / sample** column, a **cell-type** column, a
 
     **`ModuleNotFoundError: No module named 'torch'` when you `import m3`**
 
-    :   PyTorch is a separate install (Step 2). `pip install torch` into the same
-        environment.
+    :   `m3-sc` normally brings PyTorch with it, so this points at a broken or
+        partial environment. `pip install --force-reinstall torch` into the same
+        environment, and check you are not in a different env than you installed into.
 
     **Still broken?**
 

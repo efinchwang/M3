@@ -83,7 +83,7 @@ Training is handled inside [`M3.train`](api-python.md#m3train):
 
 ## Get going
 
-- **Install** — `pip install torch`, then install M3 from GitHub (see
+- **Install** — `pip install m3-sc`, and PyTorch comes along automatically (see
   [setup details](installation.md)); imported as `import m3`.
 - **First run** — the [Quickstart](quickstart.md), end to end on the built-in
   demo dataset.

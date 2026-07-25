@@ -6,7 +6,7 @@ tags:
 
 # Python API
 
-The package is installed from GitHub — a PyPI release as **`m3-sc`** is planned — and imported as **`import m3`**.
+The package is installed from PyPI with `pip install `**`m3-sc`** and imported as **`import m3`**.
 It has a one-to-one counterpart in the [R API](api-r.md) — both drive the same
 engine and produce identical results.
 

@@ -20,7 +20,7 @@ hide:
 </p>
 
 ```bash
-pip install "git+https://github.com/PYangLab/M3.git"
+pip install m3-sc
 ```
 
 <a href="quickstart/" class="md-button md-button--primary lp-cta">Get started</a>

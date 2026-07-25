@@ -1,20 +1,28 @@
 # Publish m3-sc to PyPI via Trusted Publishing (OIDC) -- no API tokens anywhere.
 #
 # One-time setup on pypi.org (do this BEFORE pushing the first tag):
-#   pypi.org -> Your projects / Publishing -> "Add a pending publisher"
-#     Owner:            PYangLab
-#     Repository:       M3
-#     Workflow name:    publish.yml
-#     Environment:      pypi
+#   pypi.org -> Your account -> Publishing -> "Add a pending publisher"
+#     PyPI Project Name: m3-sc
+#     Owner:             PYangLab
+#     Repository:        M3
+#     Workflow name:     publish.yml
+#     Environment:       pypi
 #   Then: repo Settings -> Environments -> New environment named "pypi".
+#   Adding a required reviewer to that environment gives you a manual gate in
+#   front of every upload, which is worth having (see below).
 #
 # Release flow:
 #   1. bump __version__ in src/m3/__init__.py (pyproject reads it via hatch)
 #   2. git tag v0.3.0 && git push pyanglab v0.3.0
 #
-# The tag is what triggers a release; the tag version and the package version must
-# match, and the job below fails loudly if they drift. A version can never be
-# re-uploaded to PyPI, so the TestPyPI job runs first on every tag.
+# There is deliberately NO TestPyPI rehearsal here, so the checks below are the
+# only thing standing between a tag and a permanent upload -- a version number
+# can never be reused on PyPI, even after a yank. Hence:
+#   - the tag must match __version__, or the run fails before publishing
+#   - the full test suite runs against the built wheel, not against the source
+#     tree, so what gets tested is exactly what gets uploaded
+#   - workflow_dispatch builds and tests but CANNOT publish: the pypi job is
+#     gated on the ref being a tag, so a manual run is always a dry run
 name: Publish to PyPI
 
 on:
@@ -54,25 +62,44 @@ jobs:
           name: dist
           path: dist/
 
-  testpypi:
+  # Install the built wheel and run the suite against it, so a packaging fault
+  # (a missing module, unshipped demo data) fails here rather than on a user's
+  # machine after the version is already burned.
+  test:
     needs: build
     runs-on: ubuntu-latest
-    environment: testpypi
-    permissions:
-      id-token: write
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.10", "3.12"]
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          # TestPyPI often already holds a same-numbered rehearsal upload
-          skip-existing: true
+
+      - name: Install the wheel (not the source tree)
+        run: |
+          pip install dist/*.whl pytest
+          pip list
+
+      - name: Import check
+        # src/ is not on sys.path, so this can only resolve to the installed wheel
+        run: python -c "import m3; print('m3', m3.__version__, 'from', m3.__file__)"
+
+      - name: Run the suite against the installed package
+        run: python -m pytest tests/ -v
 
   pypi:
-    needs: testpypi
+    needs: test
+    # Tags only. A manual workflow_dispatch run stops after build + test, which
+    # makes it a safe dry run rather than an unguarded path to publishing.
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

@@ -32,8 +32,8 @@ R_TUTORIALS = ["r_01_representation_learning", "r_02_patient_prediction",
 
 PY_INSTALL = (
     "# Colab setup - run this first. Installs m3 plus the tutorial plotting extras.\n"
-    "# (Colab already ships PyTorch, which m3 uses as its engine.)\n"
-    '%pip install -q "git+https://github.com/PYangLab/M3.git" scanpy umap-learn'
+    "# (PyTorch comes along automatically; Colab's preinstalled build already satisfies it.)\n"
+    '%pip install -q m3-sc scanpy umap-learn'
 )
 
 R_INSTALL = '''# Colab setup - run this first, then switch the runtime to R

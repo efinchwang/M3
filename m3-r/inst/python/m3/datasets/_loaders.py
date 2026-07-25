@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from importlib import resources
 
 import anndata
@@ -50,7 +51,18 @@ def liu_demo() -> Dataset:
     with resources.as_file(
         resources.files("m3.datasets").joinpath("_data", "liu_demo.h5ad")
     ) as p:
-        ad = anndata.read_h5ad(str(p))
+        # 23 names appear twice across the whole var index -- each is a marker
+        # measured both ways (gene CD14 and antibody CD14), which is normal for
+        # CITE-seq. anndata warns about the combined index, but we split var per
+        # modality just below and each block is unique on its own (asserted there),
+        # so the warning is noise here. Do NOT "fix" it with var_names_make_unique():
+        # that would rename the ADT CD14 to CD14-1 and surface a wrong protein name
+        # in every downstream readout, attribution included.
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message="Variable names are not unique", category=UserWarning
+            )
+            ad = anndata.read_h5ad(str(p))
 
     if "feature_types" not in ad.var.columns:
         raise ValueError(
@@ -69,7 +81,14 @@ def liu_demo() -> Dataset:
         block = ad.X[:, mask]
         modalities[mod_name] = (block if sp.issparse(block)
                                 else sp.csr_matrix(block, dtype=np.float32))
-        var[mod_name] = pd.Index(list(ad.var_names[mask]))
+        names = pd.Index(list(ad.var_names[mask]))
+        if not names.is_unique:
+            dups = sorted(set(names[names.duplicated()]))
+            raise ValueError(
+                f"liu_demo.h5ad has duplicate {mod_name} feature names "
+                f"({', '.join(dups[:5])}); package data is corrupt."
+            )
+        var[mod_name] = names
         present[mod_name] = np.ones(n, dtype=bool)
 
     if not modalities:
