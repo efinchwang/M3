@@ -108,15 +108,12 @@ build matched to a specific CUDA version (Step 2).
 
 ---
 
-## Step 4 — Tutorial extras *(optional)*
+## Step 4 — Tutorial extras *(nothing to do)*
 
 The [tutorial notebooks](notebooks/py_01_representation_learning.ipynb) plot UMAPs
-and ROC curves. `scanpy` is already a dependency of `m3-sc`, so only the plotting
-libraries are extra:
-
-```bash title="terminal"
-pip install umap-learn matplotlib
-```
+and ROC curves with `scanpy`, `umap-learn` and `matplotlib`. All three arrive with
+`m3-sc`: `scanpy` is a declared dependency, and it requires `umap-learn` and
+`matplotlib` itself. There is nothing extra to install.
 
 ---
 

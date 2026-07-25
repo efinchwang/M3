@@ -30,11 +30,43 @@ PY_TUTORIALS = ["py_01_representation_learning", "py_02_patient_prediction",
 R_TUTORIALS = ["r_01_representation_learning", "r_02_patient_prediction",
                "r_03_attribution", "r_04_augmentation"]
 
-PY_INSTALL = (
-    "# Colab setup - run this first. Installs m3 plus the tutorial plotting extras.\n"
-    "# (PyTorch comes along automatically; Colab's preinstalled build already satisfies it.)\n"
-    '%pip install -q m3-sc scanpy umap-learn'
-)
+# Why the install cell is a few lines of Python and not `%pip install m3-sc`:
+#
+# Recent scverse releases float ahead of Colab's preinstalled stack -- scanpy 1.12.1
+# wants pandas>=2.3 and anndata 0.13 wants numpy>=2.1, while Colab currently ships
+# numpy 2.0.2 / pandas 2.2.2. An unconstrained install therefore upgrades numpy and
+# pandas, and replacing those compiled packages under a live kernel leaves a
+# half-loaded numpy: the very next `import scanpy` dies with "cannot import name
+# '_center' from numpy._core.umath". Run all used to break at the second cell and
+# only a kernel restart cleared it.
+#
+# The cell pins numpy and pandas to whatever the runtime already has, and lets pip
+# work out which scanpy/anndata fit. Two reasons to do it this way round rather than
+# capping scanpy/anndata ourselves:
+#   - no version literals to go stale. When Colab updates its stack, the same cell
+#     starts resolving to newer scverse on its own, with no edit here.
+#   - pip is better at it. A hand-written `scanpy<1.12` looked right but was wrong:
+#     scanpy 1.12.0 requires pandas>=2.2.2, exactly Colab's version, and only 1.12.1
+#     raised it to >=2.3. The cap would have held users on 1.11.5 for no reason.
+#
+# Verified against real pip on both baselines. numpy 2.0.2 / pandas 2.2.2 resolves
+# to scanpy 1.12 / anndata 0.12.19; numpy 2.4.6 / pandas 3.0.5 resolves to scanpy
+# 1.12.3 / anndata 0.13.2. Neither moves numpy or pandas, so neither needs a
+# restart, and the 38-test suite passes on the older resolution too.
+#
+# The published package carries no such constraint: `pip install m3-sc` resolves to
+# the current stack, which is what CI tests. umap-learn and matplotlib are not
+# listed here because scanpy requires both itself.
+PY_INSTALL = '''# Colab setup - run this first, then Run all. No kernel restart needed.
+# PyTorch, scanpy, umap-learn and matplotlib all come along with m3-sc.
+import subprocess, sys, numpy, pandas
+
+# Keep numpy and pandas exactly as this runtime has them -- upgrading compiled
+# packages under a live kernel breaks every later import until you restart. pip
+# then picks the newest scanpy/anndata that fit what is already here.
+subprocess.run([sys.executable, "-m", "pip", "install", "-q", "m3-sc",
+                f"numpy=={numpy.__version__}", f"pandas=={pandas.__version__}"],
+               check=True)'''
 
 R_INSTALL = '''# Colab setup - run this first, then switch the runtime to R
 # (Runtime > Change runtime type > R). Precompiled Linux binaries via Posit P3M

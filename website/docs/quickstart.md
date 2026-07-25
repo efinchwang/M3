@@ -10,9 +10,8 @@ Every snippet uses the real public API; for fully rendered, executed versions
 (with figures and outputs) see the [tutorials](notebooks/py_01_representation_learning.ipynb).
 
 !!! tip "Prerequisites"
-    `pip install m3-sc` — PyTorch comes along automatically; see
-    [Installation](installation.md). The plotting snippets below additionally
-    need `pip install umap-learn matplotlib`.
+    `pip install m3-sc` — that is all. PyTorch, `scanpy`, `umap-learn` and
+    `matplotlib` all come along with it; see [Installation](installation.md).
 
 ## 0. Load the demo data
 
