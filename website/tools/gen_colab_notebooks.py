@@ -57,13 +57,12 @@ R_TUTORIALS = ["r_01_representation_learning", "r_02_patient_prediction",
 # The published package carries no such constraint: `pip install m3-sc` resolves to
 # the current stack, which is what CI tests. umap-learn and matplotlib are not
 # listed here because scanpy requires both itself.
-PY_INSTALL = '''# Colab setup - run this first, then Run all. No kernel restart needed.
-# PyTorch, scanpy, umap-learn and matplotlib all come along with m3-sc.
-import subprocess, sys, numpy, pandas
+#
+# The generated cell is deliberately comment-free -- the reasoning lives here rather
+# than in the reader's first screen. Keep the numpy/pandas arguments though: without
+# them the install upgrades both and the tutorial breaks at the next cell.
+PY_INSTALL = '''import subprocess, sys, numpy, pandas
 
-# Keep numpy and pandas exactly as this runtime has them -- upgrading compiled
-# packages under a live kernel breaks every later import until you restart. pip
-# then picks the newest scanpy/anndata that fit what is already here.
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "m3-sc",
                 f"numpy=={numpy.__version__}", f"pandas=={pandas.__version__}"],
                check=True)'''
