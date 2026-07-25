@@ -169,7 +169,7 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 extra:
-  homepage: /
+  homepage: https://pyanglab.github.io/MultiTaskOmics/
   generator: false
   social:
     - icon: fontawesome/brands/github
