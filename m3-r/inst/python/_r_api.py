@@ -33,10 +33,11 @@ from m3._engine.util import setup_seed as _setup_seed
 
 @contextlib.contextmanager
 def _in_tmpdir():
-    """Run inside a throwaway dir so the engine's cwd-relative artifacts (the
-    EarlyStopping ``best_model.pth`` in train.py) never land in the user's cwd.
-    The trained weights are already in memory on the M3 object afterwards, so the
-    dir is disposable."""
+    """Run inside a throwaway dir so any cwd-relative artifact the vendored engine
+    writes never lands in the user's cwd. The engine no longer writes one (the
+    unused ``best_model.pth`` checkpoint was removed from train.py), but this stays
+    as a guard in case a future upstream resync reintroduces one. The trained
+    weights are in memory on the M3 object afterwards, so the dir is disposable."""
     prev = os.getcwd()
     d = tempfile.mkdtemp(prefix="m3_run_")
     os.chdir(d)

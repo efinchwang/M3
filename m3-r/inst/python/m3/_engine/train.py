@@ -199,7 +199,6 @@ def train_M3(dl, val_dl, generator, criterion_smooth_cty, criterion, criterion_K
     optimizer_generator = torch.optim.AdamW([{'params': generator.parameters()}], lr=lr, weight_decay=1e-2)
     best_val_loss = float('inf')
     best_model_state = None
-    best_model_path = 'best_model.pth'
     min_delta = min_delta
 
     for epoch in tqdm(range(1, num_epochs + 1)):
@@ -243,7 +242,6 @@ def train_M3(dl, val_dl, generator, criterion_smooth_cty, criterion, criterion_K
             best_val_loss = val_loss
             epochs_no_improve = 0
             best_model_state = generator.state_dict()
-            torch.save(generator.state_dict(), best_model_path) 
         else:
             epochs_no_improve += 1
             if epochs_no_improve >= early_stop_patience:
@@ -258,7 +256,6 @@ def train_M3_with_query(dl, val_dl, generator, criterion_smooth_cty, criterion, 
     optimizer_generator = torch.optim.AdamW([{'params': generator.parameters()}], lr=lr, weight_decay=1e-2)
     best_val_loss = float('inf')
     best_model_state = None
-    best_model_path = 'best_model.pth'
     min_delta = min_delta
 
     for epoch in tqdm(range(1, num_epochs + 1)):
@@ -304,7 +301,6 @@ def train_M3_with_query(dl, val_dl, generator, criterion_smooth_cty, criterion, 
             best_val_loss = val_loss
             epochs_no_improve = 0
             best_model_state = generator.state_dict()
-            torch.save(generator.state_dict(), best_model_path) 
         else:
             epochs_no_improve += 1
             if epochs_no_improve >= early_stop_patience:
@@ -319,7 +315,6 @@ def train_M3_wo_condition(dl, val_dl, generator, criterion_smooth_cty, criterion
     optimizer_generator = torch.optim.AdamW([{'params': generator.parameters()}], lr=lr, weight_decay=1e-2)
     best_val_loss = float('inf')
     best_model_state = None
-    best_model_path = 'best_model.pth'
     min_delta = min_delta
 
     for epoch in tqdm(range(1, num_epochs + 1)):
@@ -362,7 +357,6 @@ def train_M3_wo_condition(dl, val_dl, generator, criterion_smooth_cty, criterion
             best_val_loss = val_loss
             epochs_no_improve = 0
             best_model_state = generator.state_dict()
-            torch.save(generator.state_dict(), best_model_path) 
         else:
             epochs_no_improve += 1
             if epochs_no_improve >= early_stop_patience:
