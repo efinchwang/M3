@@ -48,6 +48,12 @@ def process_batch(data_label, device, generator, criterion_smooth_cty, criterion
     return cty_loss1, batch_loss1, ae_loss1, ae_loss2, con_losses, kl_loss
 
 
+def _forward_with_cell_line_context(generator, data, batch, mask_poe, label):
+    if getattr(generator, "requires_cell_line", False):
+        return generator(data, batch, mask_poe, label)
+    return generator(data, batch, mask_poe)
+
+
 def process_batch_with_query(data_label, device, generator, criterion_smooth_cty, criterion, criterion_KL,
                              batch_classify_dim=2, condition_dims=[2, 2], epoch=1,
                              weight_modality=[1, 1], nfeatures=[500, 192]):
@@ -66,7 +72,7 @@ def process_batch_with_query(data_label, device, generator, criterion_smooth_cty
     b = batch.long()
     b_onehot = F.one_hot(b, num_classes=batch_classify_dim).float()
     criterion_mse = nn.MSELoss(reduction='none')
-    x, x_batch, z_embedding, z_batch, z_conditions, cla_cty1, cla_batch1, cla_conditions, mu, log_var = generator(data, batch, mask_poe)
+    x, x_batch, z_embedding, z_batch, z_conditions, cla_cty1, cla_batch1, cla_conditions, mu, log_var = _forward_with_cell_line_context(generator, data, batch, mask_poe, label)
 
     cty_loss1 = criterion_smooth_cty(cla_cty1, label)
     batch_loss1 = criterion_smooth_cty(cla_batch1, batch)
@@ -252,8 +258,8 @@ def train_M3(dl, val_dl, generator, criterion_smooth_cty, criterion, criterion_K
     return generator
 
 
-def train_M3_with_query(dl, val_dl, generator, criterion_smooth_cty, criterion, criterion_KL, device, lr=0.01, num_epochs=200, batch_classify_dim=2,condition_dim=2, min_delta = 0.001, early_stop_patience = 200, weight_batch_ae = 1, weight_modality = [1,1], nfeatures = [500,192]):
-    optimizer_generator = torch.optim.AdamW([{'params': generator.parameters()}], lr=lr, weight_decay=1e-2)
+def train_M3_with_query(dl, val_dl, generator, criterion_smooth_cty, criterion, criterion_KL, device, lr=0.01, num_epochs=200, batch_classify_dim=2,condition_dim=2, min_delta = 0.001, early_stop_patience = 200, weight_batch_ae = 1, weight_modality = [1,1], nfeatures = [500,192], weight_decay=1e-2):
+    optimizer_generator = torch.optim.AdamW([{'params': generator.parameters()}], lr=lr, weight_decay=weight_decay)
     best_val_loss = float('inf')
     best_model_state = None
     min_delta = min_delta

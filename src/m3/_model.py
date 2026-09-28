@@ -162,6 +162,8 @@ class M3:
         donor_prediction: bool | None = None,
         donor_predictor: dict | None = None,
         seed: int | None = 0,
+        model_builder=None,
+        weight_decay: float = 1e-2,
     ):
         """Train the complete model.
 
@@ -236,6 +238,14 @@ class M3:
         # donor-level holdout: the engine builds the query mask from donor_name
         extra = (dict(held_out_samples=self.held_out_samples, donor_name=self.donor_key)
                  if self.held_out_samples else {})
+
+        if model_builder is not None and not use_query:
+            raise ValueError(
+                "model_builder currently requires a reference/query training setup."
+            )
+        if use_query:
+            extra["model_builder"] = model_builder
+            extra["weight_decay"] = float(weight_decay)
 
         # The upstream engine leaves the Stage-1 integration VAE unseeded (run-to-run
         # drift); seed here -- mirroring the R interface -- so the run is reproducible
@@ -506,9 +516,30 @@ class M3:
     def _forward_mu(self):
         if self._generator is None:
             raise M3CapabilityError("model is not trained; call train() first.")
+
         self._generator.eval()
+
         with torch.no_grad():
-            out = self._generator(self._all_data, self._all_b, self._all_mask_poe)
+            if getattr(self._generator, "requires_cell_line", False):
+                from m3._engine.util import convert_to_longtensor
+
+                cell_line = convert_to_longtensor(
+                    self._all_metadata[self.celltype_key]
+                ).to(self._device)
+
+                out = self._generator(
+                    self._all_data,
+                    self._all_b,
+                    self._all_mask_poe,
+                    cell_line,
+                )
+            else:
+                out = self._generator(
+                    self._all_data,
+                    self._all_b,
+                    self._all_mask_poe,
+                )
+
         return out[8], out[2].shape[1]
 
     def embedding(self, part: str = "bio") -> np.ndarray:

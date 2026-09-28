@@ -1373,7 +1373,8 @@ def run_M3_update_no_classify(modality1_path, modality2_path, modality3_path, me
 def run_M3_update_with_query(modality1_path, modality2_path, modality3_path, metadata_path, save_path, condition_name, cty_name, batch_size, lr, num_epochs,
             min_delta, early_stop_patience, val_percentage, hvg_num, weight_modality, weight_batch_ae, embedding_dim,
             select_train_batch, select_test_batch, balance_training=False,
-            held_out_samples=None, donor_name=None):
+            held_out_samples=None, donor_name=None,
+            model_builder=None, weight_decay=1e-2):
 
     cuda = True if torch.cuda.is_available() else False
     FloatTensor = torch.FloatTensor
@@ -1517,9 +1518,19 @@ def run_M3_update_with_query(modality1_path, modality2_path, modality3_path, met
                                      batch_classify_dim=n_unique_batch,
                                      condition_dim=n_unique_conditions, z_dim=embedding_dim, hidden_features=[embedding_dim] * len(n_features)).to(device)
 
+    if model_builder is not None:
+        generator = model_builder(
+            generator,
+            all_transformed_dataset,
+            tuple(all_dataset.indices),
+            tuple(val_dataset.indices),
+            n_unique_cty,
+        ).to(device)
+
     generator = train_M3_with_query(all_dl, val_dl, generator, criterion_smooth_cty, criterion, criterion_kl, device,
                                                        lr=lr, num_epochs=num_epochs, batch_classify_dim=n_unique_batch, condition_dim=n_unique_conditions,   min_delta = min_delta,
-                                                       early_stop_patience = early_stop_patience, weight_batch_ae=weight_batch_ae, weight_modality=weight_modality, nfeatures=n_features)
+                                                       early_stop_patience = early_stop_patience, weight_batch_ae=weight_batch_ae, weight_modality=weight_modality, nfeatures=n_features,
+                                                       weight_decay=weight_decay)
 
     if len(preds)==2:
         return ref_data, ref_b, ref_mask_poe, ref_metadata, query_data, query_b, query_mask_poe, query_metadata, generator, preds[0], preds[1]
