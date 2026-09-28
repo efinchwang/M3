@@ -187,7 +187,7 @@ def process_highly_variable_genes(count_rna_tensor, n_top_genes=1000, target_sum
     else:
         return count_rna_tensor, None
     
-def get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, label, select_batch=[2, 5], keep_mask=None):
+def get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, label, select_batch=[2, 5], keep_mask=None, preserve_batch_codes=False):
     # keep_mask, when given, selects cells directly (e.g. a donor-level held-out
     # set spanning batches); otherwise cells are selected by batch membership.
     if keep_mask is None:
@@ -209,8 +209,11 @@ def get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, 
     keep_mask_np = keep_mask.cpu().numpy()
     metadata_sub = label.iloc[keep_mask_np, :].copy()
 
-    pd_batch = pd.Categorical(batch.cpu().numpy())
-    batch = torch.tensor(pd_batch.codes, dtype=torch.long)
+    if preserve_batch_codes:
+        batch = batch.long()
+    else:
+        pd_batch = pd.Categorical(batch.cpu().numpy())
+        batch = torch.tensor(pd_batch.codes, dtype=torch.long)
     return batch, condition, cty, count_rna, count_adt, count_atac, metadata_sub
 
 

@@ -1396,6 +1396,11 @@ def run_M3_update_with_query(modality1_path, modality2_path, modality3_path, met
     else:
         query_keep = ref_keep = None
 
+    sample_holdout = (
+        held_out_samples is not None
+        and donor_name is not None
+    )
+
     count_rna_list = load_if_available(modality1_path)
     count_adt_list = load_if_available(modality2_path)
     count_atac_list = load_if_available(modality3_path)
@@ -1406,10 +1411,10 @@ def run_M3_update_with_query(modality1_path, modality2_path, modality3_path, met
     count_atac = process_count_matrix(count_atac, count_atac_list, hvg_num[2])
 
     if balance_training == True:
-        ref_b_full, ref_c_full, ref_cty_full, ref_count_rna_full, ref_count_adt_full, ref_count_atac_full, ref_metadata_full = get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, label, select_batch=select_train_batch, keep_mask=ref_keep)
+        ref_b_full, ref_c_full, ref_cty_full, ref_count_rna_full, ref_count_adt_full, ref_count_atac_full, ref_metadata_full = get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, label, select_batch=select_train_batch, keep_mask=ref_keep, preserve_batch_codes=sample_holdout)
         ref_b, ref_c, ref_cty, ref_count_rna, ref_count_adt, ref_count_atac, ref_metadata = subsample_by_batch(ref_b_full, ref_c_full, ref_cty_full, ref_count_rna_full, ref_count_adt_full, ref_count_atac_full, ref_metadata_full)
     else:
-        ref_b, ref_c, ref_cty, ref_count_rna, ref_count_adt, ref_count_atac, ref_metadata = get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, label, select_batch=select_train_batch, keep_mask=ref_keep)
+        ref_b, ref_c, ref_cty, ref_count_rna, ref_count_adt, ref_count_atac, ref_metadata = get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, label, select_batch=select_train_batch, keep_mask=ref_keep, preserve_batch_codes=sample_holdout)
 
     ref_mask_poe_list = []
     ref_mask_recon_list = []
@@ -1441,8 +1446,9 @@ def run_M3_update_with_query(modality1_path, modality2_path, modality3_path, met
     #preds[1] = 0
 
     if select_test_batch is not None or query_keep is not None:
-        query_b, query_c, query_cty, query_count_rna, query_count_adt, query_count_atac, query_metadata = get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, label, select_batch=select_test_batch, keep_mask=query_keep)
-        query_b = query_b + max(ref_b) + 1
+        query_b, query_c, query_cty, query_count_rna, query_count_adt, query_count_atac, query_metadata = get_ref_query_data(batch, condition, cty, count_rna, count_adt, count_atac, label, select_batch=select_test_batch, keep_mask=query_keep, preserve_batch_codes=sample_holdout)
+        if not sample_holdout:
+            query_b = query_b + max(ref_b) + 1
         query_mask_poe_list = []
         query_mask_recon_list = []
         query_data_list = []
@@ -1480,7 +1486,10 @@ def run_M3_update_with_query(modality1_path, modality2_path, modality3_path, met
             torch.zeros(query_data.shape[0], dtype=torch.long, device=device) # query -> 0
         ], dim=0)
         all_transformed_dataset = MyDataset_mask_train_query(all_data, all_mask_recon, all_mask_poe, all_cty, all_b, all_c, all_train_query_info)
-        n_unique_batch = n_unique_ref_batch + n_unique_query_batch
+        if sample_holdout:
+            n_unique_batch = int(torch.cat([ref_b, query_b]).max().item()) + 1
+        else:
+            n_unique_batch = n_unique_ref_batch + n_unique_query_batch
 
     else:
         all_data = ref_data
